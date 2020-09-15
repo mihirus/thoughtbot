@@ -1,0 +1,22 @@
+{
+    "tags": {
+        "09-16" : [1,2,3], 
+        "todo"  : [3], 
+        "done"  : [1,2],
+        
+        "animal": [4,5,6], 
+        "person": [7,8],
+        "cool"  : [7,4], 
+        "uncool": [3,5,8]
+    }, 
+    "entries": {
+        "1":"take out the trash", 
+        "2":"mow the lawn", 
+        "3":"invade cuba", 
+        "4":"mongoose", 
+        "5":"mosquito", 
+        "6":"earthworm", 
+        "7":"kennedy", 
+        "8":"hitler"
+    }
+}
