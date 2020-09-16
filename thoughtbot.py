@@ -46,7 +46,7 @@ class ThoughtBot(Cmd):
       Add new thought to thoughtbot. 
 
       Usage:
-      new_ <tag1> <tag2> ... thought_ <thought string> 
+      new_ <tag1> <tag2> thought_ <thought string> 
 
       A new thought must have a thought string and at least one tag. 
       '''
@@ -227,6 +227,9 @@ class ThoughtBot(Cmd):
       if len(thought_string) > 0: 
          self.thoughts['entries'][str(entry_number)] = thought_string
 
+      # List of tags that end up empty so they can be cleaned up 
+      tags_to_delete = []
+
       ref_to_tags = self.thoughts['tags']
       for tag in ref_to_tags: 
          # Existing tag is an edit tag
@@ -241,12 +244,16 @@ class ThoughtBot(Cmd):
          # Existing tag is not an edit tag 
          # But existing tag does correspond to entry 
          elif tags_list.count(tag) == 0 and ref_to_tags[tag].count(entry_number) > 0:  
-            ref_to_tags[tag].pop(ref_to_tags[tag].index(entry_number))
+            tags_to_delete.append(tag)
    
       # Another loop so not editing existing tags while iterating over them
       # Edit tags left that do not already exist 
       for tag in tags_list: 
          ref_to_tags.update({tag : [entry_number]})
+
+      # Another loop to remove empty tags 
+      for tag in tags_to_delete: 
+         ref_to_tags.pop(tag)
          
       # Save to file after thought has been recorded 
       self.save_to_json()
