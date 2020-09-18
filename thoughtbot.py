@@ -31,7 +31,10 @@ class ThoughtBot(Cmd):
          }
       }
 
-      self.load_from_json()
+      try: 
+         self.load_from_json()
+      except FileNotFoundError: 
+         self.save_to_json()
 
    def load_from_json(self): 
       with open('data.json', 'r') as json_data: 
@@ -56,6 +59,7 @@ class ThoughtBot(Cmd):
 
       # Leave if there is no thought_ 
       if thought_index == -1:
+         print("Error: No thought given")
          return 
       
       # Get string after thought_ 
@@ -158,6 +162,7 @@ class ThoughtBot(Cmd):
 
       # If entry number isn't a key in entries, return 
       if args_list[0] not in self.thoughts['entries']:
+         print("Error: No entry with this entry number")
          return  
       
       # Get rid of entry with entry number as key 
@@ -205,6 +210,7 @@ class ThoughtBot(Cmd):
       try: 
          thought_string = args[args.index('thought_')+8:len(args)].strip()
       except ValueError: 
+         print("Error: Must have thought_ at end of command")
          return 
 
       # Split up everything before thought_ into tags list 
@@ -221,6 +227,7 @@ class ThoughtBot(Cmd):
  
       # Edit tag list 
       tags_list = args_list[2:len(args_list)]
+      tags_list_empty = not len(tags_list)
 
       # No edit tags, just change thought string  
       # Unless thought string is empty, in which case intent is to change tags
@@ -232,19 +239,35 @@ class ThoughtBot(Cmd):
 
       ref_to_tags = self.thoughts['tags']
       for tag in ref_to_tags: 
+
+         # print(tag)
+         # print(tags_list.count(tag))
+         # print(ref_to_tags[tag].count(entry_number))
+         # print(not tags_list_empty)
+
          # Existing tag is an edit tag
          # And existing tag does not correspond to entry  
-         if tags_list.count(tag) > 0 and ref_to_tags[tag].count(entry_number) == 0: 
+         if tags_list.count(tag) > 0 and \
+         ref_to_tags[tag].count(entry_number) == 0: 
             ref_to_tags[tag].append(entry_number)
             tags_list.pop(tags_list.index(tag))
          # Existing tag is an edit tag 
          # And existing tag does correspond to entry
-         elif tags_list.count(tag) > 0 and ref_to_tags[tag].count(entry_number) > 0:
+         elif tags_list.count(tag) > 0 and \
+         ref_to_tags[tag].count(entry_number) > 0:
             tags_list.pop(tags_list.index(tag))
          # Existing tag is not an edit tag 
          # But existing tag does correspond to entry 
-         elif tags_list.count(tag) == 0 and ref_to_tags[tag].count(entry_number) > 0:  
-            tags_to_delete.append(tag)
+         # And edit tags list is not empty(meaning tag editing desired)
+         
+         elif tags_list.count(tag) == 0 and \
+         ref_to_tags[tag].count(entry_number) > 0 and \
+         not tags_list_empty:
+            ref_to_tags[tag].pop(ref_to_tags[tag].index(entry_number))
+            if len(ref_to_tags[tag]) == 0: 
+               tags_to_delete.append(tag)
+
+      # print(tags_to_delete)
    
       # Another loop so not editing existing tags while iterating over them
       # Edit tags left that do not already exist 
