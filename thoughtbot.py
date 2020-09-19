@@ -24,11 +24,7 @@ class ThoughtBot(Cmd):
             # 'ex1': [1,3], 
             # 'ex2': [1,2]
          },
-         'entries':{
-            # 1: 'here is the first thought', 
-            # 2: 'here is the second thought', 
-            # 3: 'here is the third thought'
-         }
+         'entries':[]
       }
 
       try: 
@@ -66,7 +62,7 @@ class ThoughtBot(Cmd):
       thought_string = args[thought_index+8:len(args)].strip()
       
       # Add thoughtstring to entries 
-      self.thoughts['entries'].update({str(len(self.thoughts['entries'])+1):thought_string})
+      self.thoughts['entries'].append(thought_string)
 
       # Make a list of tags
       tags_list = args[0:thought_index].split()
@@ -75,9 +71,9 @@ class ThoughtBot(Cmd):
       # Add thoughtstring num to corresponding tags 
       for tag in tags_list: 
          if tag in self.thoughts['tags']: 
-            self.thoughts['tags'][tag].append(len(self.thoughts['entries']))
+            self.thoughts['tags'][tag].append(len(self.thoughts['entries'])-1)
          else: 
-            self.thoughts['tags'].update({tag:[len(self.thoughts['entries'])]})
+            self.thoughts['tags'].update({tag:[len(self.thoughts['entries'])-1]})
 
       # Save to file after thought has been recorded 
       self.save_to_json()
@@ -109,11 +105,11 @@ class ThoughtBot(Cmd):
             entry_contenders.extend(self.thoughts['tags'][tag])
 
       # Populate entry display list 
-      # If same number of entries in contender list as number of tags 
+      # If same number of entries in entry_contenders as number of tags in args_list 
       # Then that entry must correspond to all tags
       # Based on how the above block is implemented
       # Therefore, append to entry display list once 
-      for i in range(1, len(self.thoughts['entries'])+1): 
+      for i in range(0, len(self.thoughts['entries'])): 
          if entry_contenders.count(i) == len(args_list) and \
          entry_display.count(i) == 0: 
             entry_display.append(i)
@@ -121,11 +117,11 @@ class ThoughtBot(Cmd):
 
       # Get terminal size so that print can be done properly
       num_columns = os.get_terminal_size().columns
-      
+
       # Print entry display list readably 
       print('\n')
       for i in range(0,len(entry_display)): 
-         entry_str = str(entry_display[i]) + '\t' + self.thoughts['entries'][str(entry_display[i])]
+         entry_str = str(entry_display[i]) + '\t' + self.thoughts['entries'][entry_display[i]]
          print(textwrap.fill(
             entry_str, 
             initial_indent='', 
@@ -143,6 +139,18 @@ class ThoughtBot(Cmd):
       tags_ 
       ''' 
 
+      try: 
+         print()
+         entry_number = int(args.strip())
+         for tag in self.thoughts['tags']: 
+            if self.thoughts['tags'][tag].count(entry_number) > 0: 
+               print(tag,' ',end='')
+         print('\n')
+         return 
+      except ValueError: 
+         pass 
+
+
       print('\n')   
       # Print all tags 
       for key in self.thoughts['tags'].keys():
@@ -159,14 +167,16 @@ class ThoughtBot(Cmd):
       '''
 
       args_list = args.split()
+      entry_delete = int(args_list[0])
 
       # If entry number isn't a key in entries, return 
-      if args_list[0] not in self.thoughts['entries']:
+      if entry_delete >= len(self.thoughts['entries']) or \
+         entry_delete < 0:
          print("Error: No entry with this entry number")
          return  
       
       # Get rid of entry with entry number as key 
-      self.thoughts['entries'].pop(args_list[0]) 
+      self.thoughts['entries'].pop(entry_delete) 
 
       # Reference to the tags dictionary 
       ref_to_tags = self.thoughts['tags']
@@ -176,13 +186,17 @@ class ThoughtBot(Cmd):
 
       # Pop entry number in each tag list
       for tag in ref_to_tags: 
-         try: 
-            ref_to_tags[tag].pop(ref_to_tags[tag].index(int(args_list[0])))
-            if(len(ref_to_tags[tag])==0): 
-               tags_to_delete.append(tag)
-         # If entry number doesn't exist in tag list 
-         except ValueError: 
-            pass 
+         # If tag contains entry number to delete, delete entry number
+         if ref_to_tags[tag].count(entry_delete) > 0: 
+            ref_to_tags[tag].pop(ref_to_tags[tag].index(entry_delete))
+         # Decrement by 1 each entry number greater than entry delete
+         # Since the entry number is determined by the index 
+         for i in range(0, len(ref_to_tags[tag])):
+            if ref_to_tags[tag][i] > entry_delete: 
+               ref_to_tags[tag][i] = ref_to_tags[tag][i]-1
+         # If tag contains no entry numbers, delete tag
+         if(len(ref_to_tags[tag])==0): 
+            tags_to_delete.append(tag)
 
       # Pop tags if tag list is empty 
       for i in range(0, len(tags_to_delete)):
@@ -232,19 +246,13 @@ class ThoughtBot(Cmd):
       # No edit tags, just change thought string  
       # Unless thought string is empty, in which case intent is to change tags
       if len(thought_string) > 0: 
-         self.thoughts['entries'][str(entry_number)] = thought_string
+         self.thoughts['entries'][entry_number] = thought_string
 
       # List of tags that end up empty so they can be cleaned up 
       tags_to_delete = []
 
       ref_to_tags = self.thoughts['tags']
       for tag in ref_to_tags: 
-
-         # print(tag)
-         # print(tags_list.count(tag))
-         # print(ref_to_tags[tag].count(entry_number))
-         # print(not tags_list_empty)
-
          # Existing tag is an edit tag
          # And existing tag does not correspond to entry  
          if tags_list.count(tag) > 0 and \
@@ -266,8 +274,6 @@ class ThoughtBot(Cmd):
             ref_to_tags[tag].pop(ref_to_tags[tag].index(entry_number))
             if len(ref_to_tags[tag]) == 0: 
                tags_to_delete.append(tag)
-
-      # print(tags_to_delete)
    
       # Another loop so not editing existing tags while iterating over them
       # Edit tags left that do not already exist 
